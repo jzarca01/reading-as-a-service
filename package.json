@@ -1,0 +1,52 @@
+{
+  "name": "reading-as-a-service",
+  "version": "0.0.1",
+  "description": "Retrieves a User's Pocket Data.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "lint": "xo",
+    "serve": "firebase serve --only functions",
+    "shell": "firebase functions:shell",
+    "deploy": "firebase deploy --debug --only functions",
+    "logs": "firebase functions:log",
+    "setup": "yarn firebase use --add"
+  },
+  "engines": {
+    "node": "14"
+  },
+  "xo": {
+    "prettier": true
+  },
+  "author": "Jeremie Zarca",
+  "license": "ISC",
+  "dependencies": {
+    "@babel/runtime-corejs2": "^7.16.7",
+    "@firebase/database-compat": "^0.1.5",
+    "@sendgrid/mail": "^7.6.0",
+    "axios": "^0.24.0",
+    "buffer": "^6.0.3",
+    "cheerio": "^1.0.0-rc.3",
+    "cookie-parser": "^1.4.6",
+    "cors": "^2.8.5",
+    "express": "4.17.2",
+    "express-session": "1.17.2",
+    "firebase-admin": "^10.0.1",
+    "firebase-functions": "^3.16.0",
+    "firestore-store": "^2.0.2",
+    "fs": "0.0.1-security",
+    "grant-express": "^4.7.0",
+    "util": "^0.12.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.16.7",
+    "@babel/plugin-transform-runtime": "^7.16.8",
+    "@babel/preset-env": "^7.16.8",
+    "@babel/preset-react": "^7.16.7",
+    "@babel/register": "^7.16.9",
+    "@babel/runtime": "^7.16.7",
+    "firebase-functions-test": "^0.3.3",
+    "firebase-tools": "^10.1.1",
+    "xo": "^0.47.0"
+  }
+}
