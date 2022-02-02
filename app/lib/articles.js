@@ -48,6 +48,7 @@ async function getUserDigest(accessToken, defaultDuration = DEFAULT_DURATION) {
     const { duration, articles } = getMaxArticles(items, defaultDuration);
     const encryptedArticles = articles.map((s) => ({
       ...s,
+      formattedDate: new Date(s.time_added * 1000),
       salt: encrypt(`${accessToken}${DELIMITER}${s.item_id}${DELIMITER}${s.resolved_url}`),
     }));
 
