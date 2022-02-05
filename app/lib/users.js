@@ -58,12 +58,13 @@ const onUserCreated = functions.firestore
         updateDocument("PREFERENCES", context.params.userId, {
           duration: DEFAULT_DURATION,
         }),
+        updateDocument("DIGESTS", context.params.userId, {}),
         sgMail.send(msg),
       ]);
 
       return true;
     } catch (err) {
-      console.log(err);
+      functions.logger.warn(err);
       return false;
     }
   });
@@ -100,7 +101,7 @@ const onUserUpdated = functions.firestore
 
       return true;
     } catch (err) {
-      console.log(err);
+      functions.logger.warn(err);
       return false;
     }
   });

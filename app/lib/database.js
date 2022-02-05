@@ -1,6 +1,5 @@
 const admin = require('firebase-admin');
-
-admin.initializeApp();
+const functions = require('firebase-functions');
 
 const firestore = admin.firestore();
 
@@ -34,7 +33,7 @@ async function getDocument(collection, document) {
   if (doc.exists) {
     return { id: doc.id, data: doc.data() }
   }
-  console.log('No such document!');
+  functions.logger.warn('No such document!');
   return undefined;
 }
 

@@ -1,13 +1,14 @@
-const functions = require('firebase-functions');
+const functions = require("firebase-functions");
 
-const axios = require('axios');
+const axios = require("axios");
 
-const { DELIMITER } = require('./utils');
-const options = require('../options');
-const { encrypt } = require('./crypto');
-const { sgMail } = require('./mail');
+const { DELIMITER, compareDates } = require("./utils");
+const options = require("../options");
+const { encrypt } = require("./crypto");
+const { sgMail } = require("./mail");
+const { getDocument } = require("./database");
 
-const CONSUMER_KEY = functions.config().default['consumer-key'];
+const CONSUMER_KEY = functions.config().default["consumer-key"];
 const DEFAULT_COUNT = 200;
 
 const DEFAULT_DURATION = 15;
@@ -31,27 +32,69 @@ function getMaxArticles(articles, duration) {
   };
 }
 
-async function getUserDigest(accessToken, defaultDuration = DEFAULT_DURATION) {
-  const response = await axios.post('https://getpocket.com/v3/get', {
+async function getPreviousDigests(userId, today) {
+  // today: 2022-02-03
+  const previousDigests = await getDocument("DIGESTS", userId); // {id, data} || undefined
+  // functions.logger.log("getPreviousDigests today", today);
+
+  if (previousDigests) {
+    const { data } = previousDigests; // data: { [2022-02-02]: [id, ...], [2022-02-01]: [id,....]}
+    const keys = Object.keys(data);
+    // functions.logger.log("keys", keys);
+
+    if (keys.length) {
+      let sevenDaysAgo = new Date(today.replace(/-/g, "/"));
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+      const sevenDaysAgoDatestamp = sevenDaysAgo.toISOString().split("T")[0];
+
+      const filteredDigests = keys.filter((k) =>
+        compareDates(k, sevenDaysAgoDatestamp)
+      );
+      // functions.logger.log("filteredDigests", filteredDigests);
+      return filteredDigests
+        .map((previousDigestDate) => data[previousDigestDate])
+        .reduce((acc, v) => [...acc, ...v], []);
+    }
+  }
+  return [];
+}
+
+async function getUserDigest(
+  { data, id },
+  defaultDuration = DEFAULT_DURATION,
+  today
+) {
+  const response = await axios.post("https://getpocket.com/v3/get", {
     consumer_key: CONSUMER_KEY,
-    access_token: accessToken,
-    state: 'unread',
-    contentType: 'article',
-    sort: 'newest',
-    detailType: 'complete',
+    access_token: data.accessToken,
+    state: "unread",
+    contentType: "article",
+    sort: "newest",
+    detailType: "complete",
     // since: new Date('2013-01-01').getTime() / 1000,
     count: DEFAULT_COUNT,
   });
-  const items = Object.values(response.data.list);
+  let items = Object.values(response.data.list);
+  // functions.logger.log("items", items);
+  const previousDigests = await getPreviousDigests(id, today);
+  // functions.logger.log("getPreviousDigests", previousDigests);
+  if (previousDigests.length) {
+    items = items.filter((i) => !previousDigests.includes(i.item_id));
+  }
+  // functions.logger.log("after filter items", items);
 
   if (items?.length) {
     const { duration, articles } = getMaxArticles(items, defaultDuration);
+    // functions.logger.log("articles", articles);
+
     const encryptedArticles = articles.map((s) => ({
       ...s,
       formattedDate: new Date(s.time_added * 1000),
-      salt: encrypt(`${accessToken}${DELIMITER}${s.item_id}${DELIMITER}${s.resolved_url}`),
+      salt: encrypt(
+        `${data.accessToken}${DELIMITER}${s.item_id}${DELIMITER}${s.resolved_url}`
+      ),
     }));
-
+    // functions.logger.log("duration", duration);
     return { duration, articles: encryptedArticles };
   }
   return { duration: 0, articles: [] };
@@ -59,13 +102,13 @@ async function getUserDigest(accessToken, defaultDuration = DEFAULT_DURATION) {
 
 async function sendUserDigest({ duration, articles }, userEmail, id, date) {
   const msg = {
-    from: functions.config().default['sendgrid-from'],
-    template_id: functions.config().default['sendgrid-templateid'],
+    from: functions.config().default["sendgrid-from"],
+    template_id: functions.config().default["sendgrid-templateid"],
     personalizations: [
       {
         to: { email: userEmail },
         custom_args: {
-          digest: encrypt(`${date}${DELIMITER}${id}`)
+          digest: encrypt(`${date}${DELIMITER}${id}`),
         },
         dynamic_template_data: {
           duration,
@@ -75,6 +118,7 @@ async function sendUserDigest({ duration, articles }, userEmail, id, date) {
       },
     ],
   };
+  // functions.logger.log("msg", msg);
   return await sgMail.send(msg);
 }
 
@@ -82,5 +126,5 @@ module.exports = {
   getMaxArticles,
   getUserDigest,
   sendUserDigest,
-  DEFAULT_DURATION
+  DEFAULT_DURATION,
 };

@@ -23,6 +23,7 @@
   "dependencies": {
     "@babel/runtime-corejs2": "^7.16.7",
     "@firebase/database-compat": "^0.1.5",
+    "@google-cloud/pubsub": "^2.18.5",
     "@sendgrid/mail": "^7.6.0",
     "axios": "^0.24.0",
     "buffer": "^6.0.3",

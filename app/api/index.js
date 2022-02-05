@@ -50,7 +50,7 @@ router.post("/signup", async function (req, res) {
 
     return res.status(200).send({ message: "ok" });
   } catch (err) {
-    console.log("error", err);
+    functions.logger.warn("error", err);
     return res.status(500).send(err.message);
   }
 });
@@ -84,7 +84,7 @@ router.get("/callback", async function (req, res) {
     }
     return res.status(500).send({ error: "invalid state" });
   } catch (err) {
-    console.log("error", err);
+    functions.logger.warn("error", err);
     return res.status(500).send(err.message);
   }
 });
@@ -124,7 +124,7 @@ router.post("/webhook", async function (req, res) {
     }
     return res.status(200).send({ message: "ok" });
   } catch (err) {
-    console.log("error", err);
+    functions.logger.warn("error", err);
     return res.status(500).send(err.message);
   }
 });
