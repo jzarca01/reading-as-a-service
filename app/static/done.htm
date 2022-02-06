@@ -312,8 +312,10 @@
                                                               style="
                                                                 font-size: 40px;
                                                               "
-                                                              >Your account is now </span
+                                                              >Your article is
+                                                              now </span
                                                             ><span
+                                                              id="action"
                                                               style="
                                                                 font-size: 40px;
                                                                 color: #e85042;
@@ -370,57 +372,10 @@
                                                               style="
                                                                 font-size: 20px;
                                                               "
-                                                              >Notnow.email
-                                                              helps you
-                                                              de-clutter your
-                                                              reading list one
-                                                              day at a
-                                                              time.&nbsp;</span
+                                                              >You can safely close this window now.</span
                                                             >
                                                           </div>
-                                                          <div
-                                                            style="
-                                                              font-family: inherit;
-                                                              text-align: inherit;
-                                                            "
-                                                          >
-                                                            <br />
-                                                          </div>
-                                                          <div
-                                                            style="
-                                                              font-family: inherit;
-                                                              text-align: inherit;
-                                                            "
-                                                          >
-                                                            <span
-                                                              style="
-                                                                font-size: 20px;
-                                                              "
-                                                              >Starting tomorrow, or monday, we will send you some of your articles every day for you to read, archive or delete.</span
-                                                            >
-                                                          </div>
-                                                          <div
-                                                            style="
-                                                              font-family: inherit;
-                                                              text-align: inherit;
-                                                            "
-                                                          >
-                                                            <br />
-                                                          </div>
-                                                          <div
-                                                            style="
-                                                              font-family: inherit;
-                                                              text-align: inherit;
-                                                            "
-                                                          >
-                                                            <span
-                                                              style="
-                                                                font-size: 20px;
-                                                              "
-                                                              >Thank you so much for signing up ! We hope you'll like it as much as we do.</span
-                                                            >
-                                                          </div>
-                                                          <div></div>
+                                            
                                                         </div>
                                                       </td>
                                                     </tr>
@@ -506,4 +461,15 @@
       </div>
     </center>
   </body>
+  <script>
+    function loadFunction() {
+      const params = new Proxy(new URLSearchParams(window.location.search), {
+        get: (searchParams, prop) => searchParams.get(prop),
+      });
+      // Get the value of "some_key" in eg "https://example.com/?some_key=some_value"
+      let value = params.action; // "some_value"
+      document.getElementById("action").innerText = value;
+    }
+    window.onload = loadFunction();
+  </script>
 </html>

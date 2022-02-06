@@ -24,6 +24,16 @@ app.get('/', function (req, res) {
   res.sendFile(indexFile);
 });
 
+app.get('/complete', function (req, res) {
+  const indexFile = path.resolve(__dirname, './static/complete.htm');
+  res.sendFile(indexFile);
+});
+
+app.get('/done', function (req, res) {
+  const indexFile = path.resolve(__dirname, './static/done.htm');
+  res.sendFile(indexFile);
+});
+
 /*app.get('/preferences/:docId', async function (req, res) {
   res.status(418);
 });*/

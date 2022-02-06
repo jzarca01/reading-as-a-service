@@ -8,6 +8,7 @@ const {
   getActiveUsers,
   onUserCreated,
   onUserUpdated,
+  onEventsUpdated,
 } = require("./app/lib/users");
 const { getCollection } = require("./app/lib/database");
 const { asyncPool } = require("./app/lib/utils");
@@ -18,6 +19,7 @@ exports.app = functions.https.onRequest(app);
 
 exports.onUserUpdated = onUserUpdated;
 exports.onUserCreated = onUserCreated;
+exports.onEventsUpdated = onEventsUpdated;
 
 /**
  * Run once a day at 6am, to send users' digests

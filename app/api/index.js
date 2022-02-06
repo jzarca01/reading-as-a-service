@@ -6,7 +6,12 @@ const session = require("express-session");
 const FirestoreStore = require("firestore-store")(session);
 const grant = require("grant-express");
 
-const { updateDocument, addDocument, getDocument } = require("../lib/database");
+const {
+  updateDocument,
+  addDocument,
+  getDocument,
+  UNDEFINED,
+} = require("../lib/database");
 const { decrypt } = require("../lib/crypto");
 
 const pocket = require("./pocket");
@@ -71,16 +76,22 @@ router.get("/callback", async function (req, res) {
       query: { raw },
     } = req;
 
+    // functions.logger.log("req.query", req.query);
+
     if (raw?.state != "" && req.query.access_token) {
       const docId = decrypt(raw.state);
       const doc = await getDocument("USERS", docId);
 
+      const exists = await isExistingUser(doc.data.email);
+
       if (doc?.id) {
         await updateDocument("USERS", doc.id, {
           accessToken: req.query.access_token,
-          name: req.query?.username,
+          name: raw?.username || "",
+          ...(doc.data.isError && { isError: UNDEFINED }),
+          ...(!exists && { isSendWelcomeEmail: true }),
         });
-        return res.status(200).send(req.query);
+        return res.redirect('/app/complete');;
       }
       return res.status(500).send({ error: "no such document" });
     }

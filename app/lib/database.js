@@ -2,6 +2,7 @@ const admin = require('firebase-admin');
 const functions = require('firebase-functions');
 
 const firestore = admin.firestore();
+const UNDEFINED = admin.firestore.FieldValue.delete();
 
 async function addDocument(collection, data) {
   const db = await firestore;
@@ -72,4 +73,5 @@ module.exports = {
   addDocument,
   deleteDocument,
   firestore,
+  UNDEFINED,
 };

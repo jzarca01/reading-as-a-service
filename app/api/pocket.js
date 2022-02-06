@@ -5,12 +5,24 @@ const axios = require("axios");
 
 const { decrypt } = require("../lib/crypto");
 const { DELIMITER } = require("../lib/utils");
-
+const { updateDocument } = require("../lib/database");
+const { getUsers } = require("../lib/users");
 // eslint-disable-next-line new-cap
 const router = express.Router();
 
 const ALLOWED_ACTIONS = ["add", "archive", "delete", "read", "readd"];
 const CONSUMER_KEY = functions.config().default["consumer-key"];
+
+const getActions = (action) => {
+  switch (action) {
+    case "add":
+      return [];
+    case "archive":
+      return ["read", "readd", "delete"];
+    case "delete":
+      return ["read", "add"];
+  }
+};
 
 router.get("/action/:action/:encrypted_text", async function (req, res) {
   try {
@@ -60,13 +72,23 @@ router.get("/action/:action/:encrypted_text", async function (req, res) {
       return res.redirect(articleUrl);
     }
 
-    return res.status(response.status).send({
-      message: `Your article has been successfully ${
-        isAdd ? "adde" : action
-      }d. You can safely close this page now.`,
-    });
+    return res.redirect(`/app/done?action=${isAdd ? "adde" : action}d`);
   } catch (err) {
     functions.logger.warn("error", err);
+    if (err.response.status === 403 || err.response.status === 401) {
+      // functions.logger.warn("err.config.data.access_token", JSON.parse(err.config.data).access_token);
+
+      const accessToken = JSON.parse(err.config.data).access_token;
+      const users = await getUsers("accessToken", accessToken);
+
+      if (users) {
+        // functions.logger.warn("users", users);
+        updateDocument("USERS", users[0].id, {
+          isError: true,
+          isActive: false,
+        });
+      }
+    }
     return res.status(500).send(err.message);
   }
 });

@@ -9,7 +9,6 @@ async function prepareUserDigest(user, allUsers, today) {
       user.data.accessToken !== "" && user.data.email !== "";
 
     if (hasCorrectInfos) {
-
       const prefs = await getDocument("PREFERENCES", user.id);
       // functions.logger.log("prefs", prefs);
 
@@ -36,6 +35,12 @@ async function prepareUserDigest(user, allUsers, today) {
     }
   } catch (err) {
     functions.logger.warn(err);
+    if (err.response.status === 403 || err.response.status === 401) {
+      updateDocument("USERS", user.id, {
+        isError: true,
+        isActive: false,
+      });
+    }
   } finally {
     return null;
   }

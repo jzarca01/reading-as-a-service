@@ -1,34 +1,31 @@
 const functions = require("firebase-functions");
 
-const { getCollection, updateDocument } = require("./database");
+const { getCollection, updateDocument, firestore } = require("./database");
 const { sgMail } = require("./mail");
 const { encrypt } = require("../lib/crypto");
 const { DEFAULT_DURATION } = require("../lib/articles");
 const options = require("../options");
 const { DELIMITER } = require("./utils");
 
-async function isExistingUser(email) {
+async function getUsers(field, value) {
   const users = await getCollection("USERS", [
     {
-      field: "email",
+      field,
       operation: "==",
-      value: email,
+      value,
     },
   ]);
 
-  return users.length > 0;
+  return users;
+}
+
+async function isExistingUser(email) {
+  const users = await getUsers("email", email);
+  return !!users.length;
 }
 
 async function getActiveUsers() {
-  const activeUsers = await getCollection("USERS", [
-    {
-      field: "isActive",
-      operation: "==",
-      value: true,
-    },
-  ]);
-
-  return activeUsers;
+  return await getUsers("isActive", true);
 }
 
 const onUserCreated = functions.firestore
@@ -75,44 +72,81 @@ const onUserUpdated = functions.firestore
   .onUpdate(async (change, context) => {
     try {
       const document = change.after.data();
+      const docId = context.params.userId;
 
-      if (document.isActive) {
-        return null;
+      if (document.isError) {
+        const msg = {
+          from: functions.config().default["account-from"],
+          template_id: "d-4eb691b1fe1b4c30b3cf2bda7f5b4c45",
+          personalizations: [
+            {
+              to: { email: document.email },
+              dynamic_template_data: {
+                usId: encrypt(docId),
+                originUrl: options.default.origin,
+              },
+            },
+          ],
+        };
+        
+        await sgMail.send(msg);
       }
 
-      const msg = {
-        from: functions.config().default["account-from"],
-        template_id: functions.config().default["account-thankyou"],
-        personalizations: [
-          {
-            to: { email: document.email },
-            dynamic_template_data: {
-              id: Math.random(),
-              currentArticleUrl:
-                functions.config().default["current-articleurl"],
-              currentArticleTitle:
-                functions.config().default["current-articletitle"],
-              currentArticleDuration:
-                functions.config().default["current-articleduration"],
-              currentArticleDescription:
-                functions.config().default["current-articledescription"],
-              salt: encrypt(
-                `${data.accessToken}${DELIMITER}welcome${DELIMITER}${
-                  functions.config().default["current-articleurl"]
-                }`
-              ),
-            },
-          },
-        ],
-      };
+      return true;
+    } catch (err) {
+      functions.logger.warn(err);
+      return false;
+    }
+  });
 
-      await Promise.all([
-        sgMail.send(msg),
-        updateDocument("EVENTS", context.params.userId, {
-          first_activation: new Date(),
-          isActive: true,
-        }),
-      ]);
+const onEventsUpdated = functions.firestore
+  .document("EVENTS/{userId}")
+  .onUpdate(async (change, context) => {
+    try {
+      const document = change.after.data();
+      const docId = context.params.userId;
+
+      if (!document.first_activation) {
+        const msg = {
+          from: functions.config().default["account-from"],
+          template_id: functions.config().default["account-thankyou"],
+          personalizations: [
+            {
+              to: { email: document.email },
+              dynamic_template_data: {
+                id: encrypt(docId),
+                originUrl: options.default.origin,
+                currentArticleUrl:
+                  functions.config().default["current-articleurl"],
+                currentArticleTitle:
+                  functions.config().default["current-articletitle"],
+                currentArticleDuration:
+                  functions.config().default["current-articleduration"],
+                currentArticleDescription:
+                  functions.config().default["current-articledescription"],
+                salt: encrypt(
+                  `${document.accessToken}${DELIMITER}welcome${DELIMITER}${
+                    functions.config().default["current-articleurl"]
+                  }`
+                ),
+              },
+            },
+          ],
+        };
+
+        await Promise.all([
+          sgMail.send(msg),
+          updateDocument("USERS", context.params.userId, {
+            isActive: true,
+          }),
+          updateDocument("EVENTS", context.params.userId, {
+            first_activation: new Date(),
+          }),
+        ]);
+      }
+      await updateDocument("USERS", context.params.userId, {
+        isActive: true,
+      });
 
       return true;
     } catch (err) {
@@ -123,7 +157,9 @@ const onUserUpdated = functions.firestore
 
 module.exports = {
   getActiveUsers,
+  getUsers,
   isExistingUser,
   onUserCreated,
   onUserUpdated,
+  onEventsUpdated,
 };
