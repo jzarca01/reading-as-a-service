@@ -5,6 +5,7 @@ const { sgMail } = require("./mail");
 const { encrypt } = require("../lib/crypto");
 const { DEFAULT_DURATION } = require("../lib/articles");
 const options = require("../options");
+const { DELIMITER } = require("./utils");
 
 async function isExistingUser(email) {
   const users = await getCollection("USERS", [
@@ -38,8 +39,8 @@ const onUserCreated = functions.firestore
       const docId = context.params.userId;
 
       const msg = {
-        from: functions.config().default["sendgrid-from"],
-        template_id: "d-734bf729c0c44ca893b7088b4e51a961",
+        from: functions.config().default["account-from"],
+        template_id: functions.config().default["account-welcome"],
         personalizations: [
           {
             to: { email: data.email },
@@ -75,18 +76,31 @@ const onUserUpdated = functions.firestore
     try {
       const document = change.after.data();
 
-      if (document.first_activation) {
+      if (document.isActive) {
         return null;
       }
 
       const msg = {
-        from: functions.config().default["sendgrid-from"],
-        template_id: "d-2b5c2fdc6f6d4cf08cb1d4c2995aaa52",
+        from: functions.config().default["account-from"],
+        template_id: functions.config().default["account-thankyou"],
         personalizations: [
           {
             to: { email: document.email },
             dynamic_template_data: {
               id: Math.random(),
+              currentArticleUrl:
+                functions.config().default["current-articleurl"],
+              currentArticleTitle:
+                functions.config().default["current-articletitle"],
+              currentArticleDuration:
+                functions.config().default["current-articleduration"],
+              currentArticleDescription:
+                functions.config().default["current-articledescription"],
+              salt: encrypt(
+                `${data.accessToken}${DELIMITER}welcome${DELIMITER}${
+                  functions.config().default["current-articleurl"]
+                }`
+              ),
             },
           },
         ],
@@ -96,6 +110,7 @@ const onUserUpdated = functions.firestore
         sgMail.send(msg),
         updateDocument("EVENTS", context.params.userId, {
           first_activation: new Date(),
+          isActive: true,
         }),
       ]);
 

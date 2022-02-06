@@ -1,3 +1,5 @@
+const functions = require("firebase-functions");
+
 const express = require("express");
 
 const session = require("express-session");
@@ -76,7 +78,7 @@ router.get("/callback", async function (req, res) {
       if (doc?.id) {
         await updateDocument("USERS", doc.id, {
           accessToken: req.query.access_token,
-          isActive: true,
+          name: req.query?.username,
         });
         return res.status(200).send(req.query);
       }

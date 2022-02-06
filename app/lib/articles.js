@@ -102,8 +102,8 @@ async function getUserDigest(
 
 async function sendUserDigest({ duration, articles }, userEmail, id, date) {
   const msg = {
-    from: functions.config().default["sendgrid-from"],
-    template_id: functions.config().default["sendgrid-templateid"],
+    from: functions.config().default["digest-from"],
+    template_id: functions.config().default["digest-templateid"],
     personalizations: [
       {
         to: { email: userEmail },

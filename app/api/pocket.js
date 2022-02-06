@@ -9,7 +9,7 @@ const { DELIMITER } = require("../lib/utils");
 // eslint-disable-next-line new-cap
 const router = express.Router();
 
-const ALLOWED_ACTIONS = ["archive", "delete", "read", "readd"];
+const ALLOWED_ACTIONS = ["add", "archive", "delete", "read", "readd"];
 const CONSUMER_KEY = functions.config().default["consumer-key"];
 
 router.get("/action/:action/:encrypted_text", async function (req, res) {
@@ -28,29 +28,42 @@ router.get("/action/:action/:encrypted_text", async function (req, res) {
     }
 
     const isRead = action === "read";
+    const isAdd = action === "add";
 
-    const response = await axios.post("https://getpocket.com/v3/send", {
-      consumer_key: CONSUMER_KEY,
-      access_token: accessToken,
-      actions: [
-        {
-          action: "tags_add",
-          item_id: itemId,
-          tags: "reading_as_a_service",
-        },
-        {
-          action: isRead ? "archive" : action,
-          item_id: itemId,
-        },
-      ],
-    });
+    let response;
+
+    if (isAdd) {
+      response = await axios.post("https://getpocket.com/v3/add", {
+        consumer_key: CONSUMER_KEY,
+        access_token: accessToken,
+        url: articleUrl,
+      });
+    } else {
+      response = await axios.post("https://getpocket.com/v3/send", {
+        consumer_key: CONSUMER_KEY,
+        access_token: accessToken,
+        actions: [
+          {
+            action: "tags_add",
+            item_id: itemId,
+            tags: "reading_as_a_service",
+          },
+          {
+            action: isRead ? "archive" : action,
+            item_id: itemId,
+          },
+        ],
+      });
+    }
 
     if (articleUrl && isRead) {
       return res.redirect(articleUrl);
     }
 
     return res.status(response.status).send({
-      message: `Your article has been successfully ${action}d. You can safely close this page now.`,
+      message: `Your article has been successfully ${
+        isAdd ? "adde" : action
+      }d. You can safely close this page now.`,
     });
   } catch (err) {
     functions.logger.warn("error", err);
