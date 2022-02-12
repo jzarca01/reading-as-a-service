@@ -6,14 +6,14 @@ const { DELIMITER, compareDates } = require("./utils");
 const options = require("../options");
 const { encrypt } = require("./crypto");
 const { sgMail } = require("./mail");
-const { getDocument } = require("./database");
+const { getDocument, updateDocument } = require("./database");
 
 const CONSUMER_KEY = functions.config().default["consumer-key"];
 const DEFAULT_COUNT = 200;
 
 const DEFAULT_DURATION = 15;
 
-function getMaxArticles(articles, duration) {
+function getMaxArticles(articles, duration, id) {
   const filteredItems = articles
     .filter((t) => t.time_to_read)
     .sort((a, b) => a.time_to_read - b.time_to_read);
@@ -26,6 +26,14 @@ function getMaxArticles(articles, duration) {
     }
     return acc;
   }, 0);
+
+  if (filteredItems.length && computedDuration === 0 && duration < 60) {
+    updateDocument("PREFERENCES", id, {
+      duration: duration + 5,
+    });
+    return getMaxArticles(articles, duration + 5, id);
+  }
+  
   return {
     duration: computedDuration,
     articles: curatedArticles,
@@ -84,7 +92,7 @@ async function getUserDigest(
   // functions.logger.log("after filter items", items);
 
   if (items?.length) {
-    const { duration, articles } = getMaxArticles(items, defaultDuration);
+    const { duration, articles } = getMaxArticles(items, defaultDuration, id);
     // functions.logger.log("articles", articles);
 
     const encryptedArticles = articles.map((s) => ({

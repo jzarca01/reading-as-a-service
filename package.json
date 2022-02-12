@@ -26,6 +26,7 @@
     "@google-cloud/pubsub": "^2.18.5",
     "@sendgrid/mail": "^7.6.0",
     "axios": "^0.24.0",
+    "btoa": "^1.2.1",
     "buffer": "^6.0.3",
     "cheerio": "^1.0.0-rc.3",
     "cookie-parser": "^1.4.6",

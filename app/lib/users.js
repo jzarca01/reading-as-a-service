@@ -1,6 +1,6 @@
 const functions = require("firebase-functions");
 
-const { getCollection, updateDocument, firestore } = require("./database");
+const { getCollection, updateDocument, firestore, getDocument } = require("./database");
 const { sgMail } = require("./mail");
 const { encrypt } = require("../lib/crypto");
 const { DEFAULT_DURATION } = require("../lib/articles");
@@ -106,13 +106,15 @@ const onEventsUpdated = functions.firestore
       const document = change.after.data();
       const docId = context.params.userId;
 
+      const { data } = await getDocument('USERS', docId);
+
       if (!document.first_activation) {
         const msg = {
           from: functions.config().default["account-from"],
           template_id: functions.config().default["account-thankyou"],
           personalizations: [
             {
-              to: { email: document.email },
+              to: { email: data.email },
               dynamic_template_data: {
                 id: encrypt(docId),
                 originUrl: options.default.origin,
@@ -125,7 +127,7 @@ const onEventsUpdated = functions.firestore
                 currentArticleDescription:
                   functions.config().default["current-articledescription"],
                 salt: encrypt(
-                  `${document.accessToken}${DELIMITER}welcome${DELIMITER}${
+                  `${data.accessToken}${DELIMITER}welcome${DELIMITER}${
                     functions.config().default["current-articleurl"]
                   }`
                 ),

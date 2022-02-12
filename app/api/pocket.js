@@ -2,6 +2,7 @@ const functions = require("firebase-functions");
 
 const express = require("express");
 const axios = require("axios");
+const btoa = require("btoa");
 
 const { decrypt } = require("../lib/crypto");
 const { DELIMITER } = require("../lib/utils");
@@ -18,7 +19,7 @@ const getActions = (action) => {
     case "add":
       return [];
     case "archive":
-      return ["read", "readd", "delete"];
+      return ["read", "delete"];
     case "delete":
       return ["read", "add"];
   }
@@ -72,10 +73,16 @@ router.get("/action/:action/:encrypted_text", async function (req, res) {
       return res.redirect(articleUrl);
     }
 
-    return res.redirect(`/app/done?action=${isAdd ? "adde" : action}d`);
+    const code = {
+      salt: encrypted_text,
+      more_actions: getActions(action),
+      action: `${isAdd ? "adde" : action}d`,
+    };
+
+    return res.redirect(`/app/done?code=${btoa(JSON.stringify(code))}`);
   } catch (err) {
     functions.logger.warn("error", err);
-    if (err.response.status === 403 || err.response.status === 401) {
+    if (err.response?.status === 403 || err.response?.status === 401) {
       // functions.logger.warn("err.config.data.access_token", JSON.parse(err.config.data).access_token);
 
       const accessToken = JSON.parse(err.config.data).access_token;
