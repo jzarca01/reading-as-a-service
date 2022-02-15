@@ -1,6 +1,11 @@
 const functions = require("firebase-functions");
 
-const { getCollection, updateDocument, firestore, getDocument } = require("./database");
+const {
+  getCollection,
+  updateDocument,
+  firestore,
+  getDocument,
+} = require("./database");
 const { sgMail } = require("./mail");
 const { encrypt } = require("../lib/crypto");
 const { DEFAULT_DURATION } = require("../lib/articles");
@@ -77,7 +82,7 @@ const onUserUpdated = functions.firestore
       if (document.isError) {
         const msg = {
           from: functions.config().default["account-from"],
-          template_id: "d-4eb691b1fe1b4c30b3cf2bda7f5b4c45",
+          template_id: functions.config().default["iserror-templateid"],
           personalizations: [
             {
               to: { email: document.email },
@@ -88,7 +93,7 @@ const onUserUpdated = functions.firestore
             },
           ],
         };
-        
+
         await sgMail.send(msg);
       }
 
@@ -106,7 +111,11 @@ const onEventsUpdated = functions.firestore
       const document = change.after.data();
       const docId = context.params.userId;
 
-      const { data } = await getDocument('USERS', docId);
+      const { data } = await getDocument("USERS", docId);
+      const { data: onboardingArticle } = await getDocument(
+        "PREFERENCES",
+        "general"
+      );
 
       if (!document.first_activation) {
         const msg = {
@@ -118,18 +127,12 @@ const onEventsUpdated = functions.firestore
               dynamic_template_data: {
                 id: encrypt(docId),
                 originUrl: options.default.origin,
-                currentArticleUrl:
-                  functions.config().default["current-articleurl"],
-                currentArticleTitle:
-                  functions.config().default["current-articletitle"],
-                currentArticleDuration:
-                  functions.config().default["current-articleduration"],
-                currentArticleDescription:
-                  functions.config().default["current-articledescription"],
+                currentArticleUrl: onboardingArticle.url,
+                currentArticleTitle: onboardingArticle.title,
+                currentArticleDuration: onboardingArticle.duration,
+                currentArticleDescription: onboardingArticle.description,
                 salt: encrypt(
-                  `${data.accessToken}${DELIMITER}welcome${DELIMITER}${
-                    functions.config().default["current-articleurl"]
-                  }`
+                  `${data.accessToken}${DELIMITER}welcome${DELIMITER}${onboardingArticle.url}`
                 ),
               },
             },
