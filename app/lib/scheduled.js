@@ -9,25 +9,34 @@ async function prepareUserDigest(user, allUsers, today) {
       user.data.accessToken !== "" && user.data.email !== "";
 
     if (hasCorrectInfos) {
-      const prefs = await getDocument("PREFERENCES", user.id);
+      const {
+        id,
+        data: { name, email, referral_id },
+      } = user;
+
+      const prefs = await getDocument("PREFERENCES", id);
       // functions.logger.log("prefs", prefs);
 
       const dailyDigest = await getUserDigest(user, prefs?.duration, today[0]);
       // functions.logger.log("dailyDigest", dailyDigest);
 
       if (dailyDigest.articles.length) {
-        // functions.logger.log("dailyDigest", dailyDigest);
+        functions.logger.log("dailyDigest", dailyDigest);
+        functions.logger.log("user", user);
+
         return Promise.all([
-          await sendUserDigest(
-            { ...dailyDigest, name: user.data.name || undefined },
-            user.data.email,
-            user.id,
-            today[0]
-          ),
-          await updateDocument("EVENTS", user.id, {
+          await sendUserDigest({
+            ...dailyDigest,
+            name,
+            email,
+            id,
+            date: today[0],
+            referral_id,
+          }),
+          await updateDocument("EVENTS", id, {
             last_digest_sent: today[0],
           }),
-          await updateDocument("DIGESTS", user.id, {
+          await updateDocument("DIGESTS", id, {
             [today[0]]: dailyDigest.articles.map((a) => a.item_id),
           }),
         ]);

@@ -59,7 +59,7 @@ router.get("/action/:action/:encrypted_text", async function (req, res) {
           {
             action: "tags_add",
             item_id: itemId,
-            tags: "reading_as_a_service",
+            tags: "notnow.email",
           },
           {
             action: isRead ? "archive" : action,

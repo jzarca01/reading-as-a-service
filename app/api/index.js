@@ -50,9 +50,12 @@ router.post("/signup", async function (req, res) {
       return res.status(500).send({ error: "user already exists" });
     }
 
+    const { email, ...rest } = data;
+
     await addDocument("USERS", {
       email: data.email,
       isActive: false,
+      ...rest,
     });
 
     return res.status(200).send({ message: "ok" });
@@ -91,7 +94,7 @@ router.get("/callback", async function (req, res) {
           ...(doc.data.isError && { isError: UNDEFINED }),
           ...(!exists && { isSendWelcomeEmail: true }),
         });
-        return res.redirect('/app/complete');;
+        return res.redirect("/app/complete");
       }
       return res.status(500).send({ error: "no such document" });
     }
@@ -134,6 +137,26 @@ router.post("/webhook", async function (req, res) {
         return true;
       });
       return res.status(200).send({ message: "ok" });
+    }
+    return res.status(200).send({ message: "ok" });
+  } catch (err) {
+    functions.logger.warn("error", err);
+    return res.status(500).send(err.message);
+  }
+});
+
+router.post("/tuemilio", async function (req, res) {
+  try {
+    // functions.logger.log(req.body);
+    if (req.body?.event === "grant-access" && req.body?.address) {
+      const { address, referrer_id, referral_id } = req.body;
+
+      await addDocument("USERS", {
+        email: address,
+        isActive: false,
+        referrer_id,
+        referral_id,
+      });
     }
     return res.status(200).send({ message: "ok" });
   } catch (err) {

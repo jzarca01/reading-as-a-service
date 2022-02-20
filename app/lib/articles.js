@@ -13,31 +13,35 @@ const DEFAULT_COUNT = 200;
 
 const DEFAULT_DURATION = 15;
 
-function getMaxArticles(articles, duration, id) {
+function getMaxArticles(articles, duration) {
   const filteredItems = articles
     .filter((t) => t.time_to_read)
     .sort((a, b) => a.time_to_read - b.time_to_read);
+
+  let isDurationModified = false;
   const curatedArticles = [];
 
-  const computedDuration = filteredItems.reduce((acc, item) => {
-    if (item.time_to_read + acc < duration) {
-      curatedArticles.push(item);
-      return acc + item.time_to_read;
-    }
-    return acc;
-  }, 0);
+  const getCuratedCurated = (articles, duration) => {
+    const computedDuration = articles.reduce((acc, item) => {
+      if (item.time_to_read + acc < duration) {
+        curatedArticles.push(item);
+        return acc + item.time_to_read;
+      }
+      return acc;
+    }, 0);
 
-  if (filteredItems.length && computedDuration === 0 && duration < 60) {
-    updateDocument("PREFERENCES", id, {
-      duration: duration + 5,
-    });
-    return getMaxArticles(articles, duration + 5, id);
-  }
-  
-  return {
-    duration: computedDuration,
-    articles: curatedArticles,
+    if (articles.length && computedDuration === 0 && duration < 60) {
+      isDurationModified = true;
+      return getCuratedCurated(articles, duration + 5);
+    }
+
+    return {
+      duration: computedDuration,
+      articles: curatedArticles,
+    };
   };
+
+  return { ...getCuratedCurated(filteredItems, duration), isDurationModified };
 }
 
 async function getPreviousDigests(userId, today) {
@@ -92,7 +96,10 @@ async function getUserDigest(
   // functions.logger.log("after filter items", items);
 
   if (items?.length) {
-    const { duration, articles } = getMaxArticles(items, defaultDuration, id);
+    const { duration, articles, isDurationModified } = getMaxArticles(
+      items,
+      defaultDuration
+    );
     // functions.logger.log("articles", articles);
 
     const encryptedArticles = articles.map((s) => ({
@@ -103,25 +110,45 @@ async function getUserDigest(
       ),
     }));
     // functions.logger.log("duration", duration);
-    return { duration, articles: encryptedArticles };
+    return {
+      duration,
+      articles: encryptedArticles,
+      isDurationModified,
+      canRefer: previousDigests.length >= 3,
+    };
   }
   return { duration: 0, articles: [] };
 }
 
-async function sendUserDigest({ duration, articles }, userEmail, id, date) {
+async function sendUserDigest({
+  duration,
+  name,
+  articles,
+  email,
+  id,
+  date,
+  isDurationModified,
+  canRefer,
+  referral_id,
+}) {
   const msg = {
     from: functions.config().default["digest-from"],
     template_id: functions.config().default["digest-templateid"],
     personalizations: [
       {
-        to: { email: userEmail },
+        to: { email },
         custom_args: {
           digest: encrypt(`${date}${DELIMITER}${id}`),
         },
         dynamic_template_data: {
+          isDurationModified,
           duration,
+          name: name || undefined,
+          nbArticles: articles.length,
           articles,
           originUrl: options.default.origin,
+          canRefer,
+          referral_id,
         },
       },
     ],
