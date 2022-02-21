@@ -1,4 +1,5 @@
 const functions = require("firebase-functions");
+const admin = require("firebase-admin");
 
 const express = require("express");
 
@@ -52,8 +53,11 @@ router.post("/signup", async function (req, res) {
 
     const { email, ...rest } = data;
 
-    await addDocument("USERS", {
-      email: data.email,
+    const userRecord = await admin.auth().createUser({
+      email,
+      ...rest,
+    });
+    await updateDocument("USERS", userRecord.uid, {
       isActive: false,
       ...rest,
     });
@@ -91,7 +95,7 @@ router.get("/callback", async function (req, res) {
         await updateDocument("USERS", doc.id, {
           accessToken: req.query.access_token,
           name: raw?.username || "",
-          ...(doc.data.isError && { isError: UNDEFINED }),
+          ...(doc.data.isError && { isError: UNDEFINED, isActive: true }),
           ...(!exists && { isSendWelcomeEmail: true }),
         });
         return res.redirect("/app/complete");

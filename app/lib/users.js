@@ -141,9 +141,6 @@ const onEventsUpdated = functions.firestore
 
         await Promise.all([
           sgMail.send(msg),
-          updateDocument("USERS", context.params.userId, {
-            isActive: true,
-          }),
           updateDocument("EVENTS", context.params.userId, {
             first_activation: new Date(),
           }),
