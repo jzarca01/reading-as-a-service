@@ -51,7 +51,7 @@ router.post("/signup", async function (req, res) {
       return res.status(500).send({ error: "user already exists" });
     }
 
-    const { email, ...rest } = data;
+    const { email, uid, ...rest } = data;
 
     const userRecord = await admin.auth().createUser({
       email,
@@ -59,6 +59,7 @@ router.post("/signup", async function (req, res) {
     });
     await updateDocument("USERS", userRecord.uid, {
       isActive: false,
+      email,
       ...rest,
     });
 
@@ -88,16 +89,20 @@ router.get("/callback", async function (req, res) {
     if (raw?.state != "" && req.query.access_token) {
       const docId = decrypt(raw.state);
       const doc = await getDocument("USERS", docId);
-
-      const exists = await isExistingUser(doc.data.email);
+      const { data: eventData } = await getDocument("EVENTS", docId);
 
       if (doc?.id) {
         await updateDocument("USERS", doc.id, {
           accessToken: req.query.access_token,
           name: raw?.username || "",
-          ...(doc.data.isError && { isError: UNDEFINED, isActive: true }),
-          ...(!exists && { isSendWelcomeEmail: true }),
+          isActive: true,
+          ...(doc.data.isError && { isError: UNDEFINED }),
         });
+        if (!eventData.first_activation) {
+          await updateDocument("EVENTS", doc.id, {
+            first_activation: false,
+          });
+        }
         return res.redirect("/app/complete");
       }
       return res.status(500).send({ error: "no such document" });
@@ -141,26 +146,6 @@ router.post("/webhook", async function (req, res) {
         return true;
       });
       return res.status(200).send({ message: "ok" });
-    }
-    return res.status(200).send({ message: "ok" });
-  } catch (err) {
-    functions.logger.warn("error", err);
-    return res.status(500).send(err.message);
-  }
-});
-
-router.post("/tuemilio", async function (req, res) {
-  try {
-    // functions.logger.log(req.body);
-    if (req.body?.event === "grant-access" && req.body?.address) {
-      const { address, referrer_id, referral_id } = req.body;
-
-      await addDocument("USERS", {
-        email: address,
-        isActive: false,
-        referrer_id,
-        referral_id,
-      });
     }
     return res.status(200).send({ message: "ok" });
   } catch (err) {

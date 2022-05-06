@@ -21,8 +21,8 @@ async function prepareUserDigest(user, allUsers, today) {
       // functions.logger.log("dailyDigest", dailyDigest);
 
       if (dailyDigest.articles.length) {
-        functions.logger.log("dailyDigest", dailyDigest);
-        functions.logger.log("user", user);
+        // functions.logger.log("dailyDigest", dailyDigest);
+        // functions.logger.log("user", user);
 
         return Promise.all([
           await sendUserDigest({
@@ -37,7 +37,13 @@ async function prepareUserDigest(user, allUsers, today) {
             last_digest_sent: today[0],
           }),
           await updateDocument("DIGESTS", id, {
-            [today[0]]: dailyDigest.articles.map((a) => a.item_id),
+            [today[0]]: (dailyDigest?.articles || []).map((a) => ({ id: a.item_id, status: 'unread', metadata: {
+              ...a?.domain_metadata,
+              url: a.resolved_url || a.given_url,
+              authors: Object.values(a.authors).map(a => ({name: a?.name, url: a?.url})),
+              lang: a.lang,
+              word_count: a.word_count,
+            } })),
           }),
         ]);
       }

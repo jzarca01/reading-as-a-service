@@ -51,8 +51,13 @@ async function getPreviousDigests(userId, today) {
 
   if (previousDigests) {
     const { data } = previousDigests; // data: { [2022-02-02]: [id, ...], [2022-02-01]: [id,....]}
+
+    if (!data) {
+      return [];
+    }
     const keys = Object.keys(data);
-    // functions.logger.log("keys", keys);
+
+    //functions.logger.log("keys", keys);
 
     if (keys.length) {
       let sevenDaysAgo = new Date(today.replace(/-/g, "/"));
@@ -62,9 +67,17 @@ async function getPreviousDigests(userId, today) {
       const filteredDigests = keys.filter((k) =>
         compareDates(k, sevenDaysAgoDatestamp)
       );
-      // functions.logger.log("filteredDigests", filteredDigests);
+
+      //functions.logger.log("filteredDigests", filteredDigests);
+
       return filteredDigests
-        .map((previousDigestDate) => data[previousDigestDate])
+        .map((f) => data[f])
+        .map((v) => {
+          if (typeof v[0] === "string") {
+            return v;
+          }
+          return v.map((v) => v.id);
+        })
         .reduce((acc, v) => [...acc, ...v], []);
     }
   }
@@ -90,10 +103,10 @@ async function getUserDigest(
   // functions.logger.log("items", items);
   const previousDigests = await getPreviousDigests(id, today);
   // functions.logger.log("getPreviousDigests", previousDigests);
-  if (previousDigests.length) {
-    items = items.filter((i) => !previousDigests.includes(i.item_id));
-  }
-  // functions.logger.log("after filter items", items);
+  const toRemove = new Set(previousDigests);
+
+  items = items.filter((i) => !toRemove.has(i.item_id));
+  //functions.logger.log("after filter items", items);
 
   if (items?.length) {
     const { duration, articles, isDurationModified } = getMaxArticles(
@@ -106,7 +119,7 @@ async function getUserDigest(
       ...s,
       formattedDate: new Date(s.time_added * 1000),
       salt: encrypt(
-        `${data.accessToken}${DELIMITER}${s.item_id}${DELIMITER}${s.resolved_url}`
+        `${data.accessToken}${DELIMITER}${s.item_id}${DELIMITER}${s.resolved_url}${DELIMITER}${today}`
       ),
     }));
     // functions.logger.log("duration", duration);

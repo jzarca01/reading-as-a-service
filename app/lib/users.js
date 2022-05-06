@@ -117,7 +117,11 @@ const onEventsUpdated = functions.firestore
         "general"
       );
 
+      // functions.logger.log("onEventsUpdated data", data);
+
       if (!document.first_activation) {
+        //functions.logger.log("onEventsUpdated !first_activation");
+
         const msg = {
           from: functions.config().default["account-from"],
           template_id: functions.config().default["account-thankyou"],

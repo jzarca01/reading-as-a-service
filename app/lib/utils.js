@@ -18,7 +18,7 @@ function compareDates(dateA, dateB) {
   const date2Updated = new Date(dateB.replace(/-/g, "/"));
   // functions.logger.log("date2Updated", date2Updated);
 
-  return date1Updated > date2Updated;
+  return date1Updated >= date2Updated;
 }
 
 async function asyncPool(poolLimit, array, iteratorFn, ...theArgs) {

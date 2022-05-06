@@ -6,7 +6,7 @@ const btoa = require("btoa");
 
 const { decrypt } = require("../lib/crypto");
 const { DELIMITER } = require("../lib/utils");
-const { updateDocument } = require("../lib/database");
+const { updateDocument, getDocument } = require("../lib/database");
 const { getUsers } = require("../lib/users");
 // eslint-disable-next-line new-cap
 const router = express.Router();
@@ -33,7 +33,7 @@ router.get("/action/:action/:encrypted_text", async function (req, res) {
       return res.status(401).send({ error: "action not authorized" });
     }
 
-    const [accessToken, itemId, articleUrl] =
+    const [accessToken, itemId, articleUrl, date] =
       decrypt(encrypted_text).split(DELIMITER);
 
     if (!accessToken || !itemId) {
@@ -42,6 +42,8 @@ router.get("/action/:action/:encrypted_text", async function (req, res) {
 
     const isRead = action === "read";
     const isAdd = action === "add";
+
+    const users = await getUsers("accessToken", accessToken);
 
     let response;
 
@@ -67,6 +69,20 @@ router.get("/action/:action/:encrypted_text", async function (req, res) {
           },
         ],
       });
+    }
+
+    try {
+      // functions.logger.warn("date", date);
+      const { data } = await getDocument('DIGESTS', users[0].id);
+
+      const digestToUpdate = data[date];
+      objIndex = digestToUpdate.findIndex((obj => obj.id == itemId));
+      digestToUpdate[objIndex].status = action;
+      await updateDocument("DIGESTS", users[0].id, {
+        [date]: digestToUpdate,
+      });
+    } catch (err) {
+      functions.logger.warn("Could not update digest status", date);
     }
 
     if (articleUrl && isRead) {
