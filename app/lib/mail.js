@@ -1,9 +1,9 @@
-const functions = require("firebase-functions");
+const functions = require('firebase-functions');
 
-const sgMail = require("@sendgrid/mail");
+const sgMail = require('@sendgrid/mail');
 
-const TRACKED_EVENTS = ["delivered", "open", "click", "unsubscribe"];
+const TRACKED_EVENTS = ['delivered', 'open', 'click', 'unsubscribe'];
 
-sgMail.setApiKey(functions.config().default["sendgrid-apikey"]);
+sgMail.setApiKey(functions.config().default['sendgrid-apikey']);
 
 module.exports = { sgMail, TRACKED_EVENTS };

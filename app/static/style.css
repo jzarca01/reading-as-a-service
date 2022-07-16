@@ -1,40 +1,40 @@
 body {
     background: white;
-    font-family: "Lato", sans-serif;
+    font-family: 'Lato', sans-serif;
     text-align: center;
-  }
+}
 
-  form {
+form {
     width: 450px;
     margin: 17% auto;
-  }
+}
 
-  .header {
+.header {
     font-size: 35px;
     text-transform: uppercase;
     letter-spacing: 5px;
-  }
+}
 
-  .description {
+.description {
     font-size: 14px;
     letter-spacing: 1px;
     line-height: 1.3em;
     margin: -2px 0 45px;
-  }
+}
 
-  .input {
+.input {
     display: flex;
     align-items: center;
     border: 1px solid #e86c8d;
     border-radius: 5px;
-  }
+}
 
-  .button {
+.button {
     height: 44px;
     border: none;
-  }
+}
 
-  #email {
+#email {
     width: 75%;
     background: #fdfcfb;
     font-family: inherit;
@@ -42,9 +42,9 @@ body {
     letter-spacing: 1px;
     text-indent: 5%;
     border-radius: 5px 0 0 5px;
-  }
+}
 
-  #submit {
+#submit {
     width: 25%;
     height: 46px;
     background: #e86c8d;
@@ -55,14 +55,14 @@ body {
     border-radius: 0 5px 5px 0;
     cursor: pointer;
     transition: background 0.3s ease-in-out;
-  }
+}
 
-  #submit:hover {
+#submit:hover {
     background: #d45d7d;
-  }
+}
 
-  input:focus {
+input:focus {
     outline: none;
     outline: 2px solid #e86c8d;
     box-shadow: 0 0 2px #e86c8d;
-  }
+}

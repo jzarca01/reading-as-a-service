@@ -6,7 +6,7 @@ const express = require('express');
 const router = express.Router();
 
 router.get('/preferences/:docId', async function (req, res) {
-  res.status(418);
+    res.status(418);
 });
 
 /* router.post('/preferences', async function (req, res) {
