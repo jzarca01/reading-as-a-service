@@ -11,7 +11,7 @@ const DELIMITER = '§';
 function compareDates(dateA, dateB) {
     // functions.logger.log("dateA", dateA);
     // functions.logger.log("dateB", dateB);
-    return dateA.isSameOrAfter(dateB);
+    return moment(dateA).isSameOrAfter(moment(dateB));
 }
 
 async function asyncPool(poolLimit, array, iteratorFn, ...theArgs) {

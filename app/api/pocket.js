@@ -3,6 +3,7 @@ const functions = require('firebase-functions');
 const express = require('express');
 const axios = require('axios');
 const btoa = require('btoa');
+const moment = require('moment');
 
 const { decrypt } = require('../lib/crypto');
 const { DELIMITER } = require('../lib/utils');
@@ -40,6 +41,10 @@ router.get('/action/:action/:encrypted_text', async function (req, res) {
             return res.status(401).send({ error: 'missing parameters' });
         }
 
+        const digestDate = moment(date)
+            .format(moment.HTML5_FMT.DATE)
+            .toString();
+
         const isRead = action === 'read';
         const isAdd = action === 'add';
 
@@ -75,17 +80,18 @@ router.get('/action/:action/:encrypted_text', async function (req, res) {
         try {
             // functions.logger.warn("date", date);
             const { data } = await getDocument('DIGESTS', users[0].id);
+            functions.logger.warn('data', data);
 
-            const digestToUpdate = data[date];
+            const digestToUpdate = data[digestDate];
             const objIndex = digestToUpdate.findIndex(
                 (obj) => obj.id == itemId
             );
             digestToUpdate[objIndex].status = action;
             await updateDocument('DIGESTS', users[0].id, {
-                [date]: digestToUpdate,
+                [digestDate]: digestToUpdate,
             });
         } catch (err) {
-            functions.logger.warn('Could not update digest status', date);
+            functions.logger.warn('Could not update digest status', digestDate);
         }
 
         if (articleUrl && isRead) {

@@ -3,7 +3,7 @@ const functions = require('firebase-functions');
 const { getDocument, updateDocument, deleteDocument } = require('./database');
 const { getUserDigest, sendUserDigest } = require('./articles');
 
-async function prepareUserDigest(user, allUsers, today) {
+async function prepareUserDigest(user, _allUsers, args) {
     try {
         const hasCorrectInfos =
             user.data.accessToken !== '' && user.data.email !== '';
@@ -17,16 +17,28 @@ async function prepareUserDigest(user, allUsers, today) {
             const prefs = await getDocument('PREFERENCES', id);
             // functions.logger.log("prefs", prefs);
 
+            const [today] = args;
+
             const dailyDigest = await getUserDigest(
                 user,
                 prefs?.duration,
                 today
             );
+
+            const getAuthors = (article) => {
+                // functions.logger.log("getAuthors", article);
+                if (!article?.authors) {
+                    return [];
+                }
+                return Object.values(article.authors).map((a) => ({
+                    name: a?.name,
+                    url: a?.url,
+                }));
+            };
             // functions.logger.log("dailyDigest", dailyDigest);
 
             if (dailyDigest.articles.length) {
-                // functions.logger.log("dailyDigest", dailyDigest);
-                // functions.logger.log("user", user);
+                functions.logger.log('today', today);
 
                 return Promise.all([
                     sendUserDigest({
@@ -47,12 +59,7 @@ async function prepareUserDigest(user, allUsers, today) {
                             metadata: {
                                 ...a?.domain_metadata,
                                 url: a.resolved_url || a.given_url,
-                                authors: (Object.values(a?.authors) || []).map(
-                                    (a) => ({
-                                        name: a?.name,
-                                        url: a?.url,
-                                    })
-                                ),
+                                authors: getAuthors(a),
                                 lang: a.lang,
                                 word_count: a.word_count,
                             },

@@ -1,12 +1,7 @@
 const functions = require('firebase-functions');
 const moment = require('moment');
 
-const {
-    getCollection,
-    updateDocument,
-    firestore,
-    getDocument,
-} = require('./database');
+const { getCollection, updateDocument, getDocument } = require('./database');
 const { sgMail } = require('./mail');
 const { encrypt } = require('../lib/crypto');
 const { DEFAULT_DURATION } = require('../lib/articles');
@@ -57,7 +52,7 @@ const onUserCreated = functions.firestore
 
             await Promise.all([
                 updateDocument('EVENTS', context.params.userId, {
-                    account_creation: moment().toString(),
+                    account_creation: moment().format('LLLL').toString(),
                 }),
                 updateDocument('PREFERENCES', context.params.userId, {
                     duration: DEFAULT_DURATION,
@@ -150,7 +145,7 @@ const onEventsUpdated = functions.firestore
                 await Promise.all([
                     sgMail.send(msg),
                     updateDocument('EVENTS', context.params.userId, {
-                        first_activation: moment().toString(),
+                        first_activation: moment().format('LLLL').toString(),
                     }),
                 ]);
             }

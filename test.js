@@ -1,4 +1,3 @@
-const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 const { PubSub } = require('@google-cloud/pubsub');
 
@@ -14,9 +13,7 @@ async function init() {
     console.log(
         `Trigger sheduled function via PubSub topic: ${SCHEDULED_FUNCTION_TOPIC}`
     );
-    await pubsub
-        .topic(SCHEDULED_FUNCTION_TOPIC)
-        .publish(Buffer.from(JSON.stringify({ foo: 'bar' })));
+    await pubsub.topic(SCHEDULED_FUNCTION_TOPIC).publishMessage({ foo: 'bar' });
 }
 
 init();

@@ -40,6 +40,7 @@
         "firestore-store": "^2.0.2",
         "fs": "0.0.1-security",
         "grant-express": "^4.7.0",
+        "moment": "^2.29.4",
         "util": "^0.12.4"
     },
     "devDependencies": {

@@ -2,17 +2,13 @@ const functions = require('firebase-functions');
 const admin = require('firebase-admin');
 
 const express = require('express');
+const moment = require('moment');
 
 const session = require('express-session');
 const FirestoreStore = require('firestore-store')(session);
 const grant = require('grant-express');
 
-const {
-    updateDocument,
-    addDocument,
-    getDocument,
-    UNDEFINED,
-} = require('../lib/database');
+const { updateDocument, getDocument, UNDEFINED } = require('../lib/database');
 const { decrypt } = require('../lib/crypto');
 
 const pocket = require('./pocket');
@@ -20,7 +16,7 @@ const preferences = require('./preferences');
 const options = require('../options');
 const { isExistingUser } = require('../lib/users');
 const { TRACKED_EVENTS } = require('../lib/mail');
-const { asyncForEach, DELIMITER, compareDates } = require('../lib/utils');
+const { asyncForEach, DELIMITER } = require('../lib/utils');
 const { firestore } = require('../lib/database');
 
 // eslint-disable-next-line new-cap
@@ -51,6 +47,7 @@ router.post('/signup', async function (req, res) {
             return res.status(500).send({ error: 'user already exists' });
         }
 
+        // eslint-disable-next-line no-unused-vars
         const { email, uid, ...rest } = data;
 
         const userRecord = await admin.auth().createUser({
@@ -118,10 +115,12 @@ router.post('/webhook', async function (req, res) {
     try {
         const filteredEvents = (req.body || []).filter(
             (e) =>
+                // eslint-disable-next-line no-prototype-builtins
                 TRACKED_EVENTS.includes(e.event) && e.hasOwnProperty('digest')
         );
 
         if (filteredEvents.length) {
+            // eslint-disable-next-line no-unused-vars
             const [digest, docId] = decrypt(filteredEvents[0].digest).split(
                 DELIMITER
             );
@@ -132,19 +131,11 @@ router.post('/webhook', async function (req, res) {
                 return res.status(500).send({ error: 'no such document' });
             }
 
-            const { data } = eventsDoc;
             await asyncForEach(filteredEvents, async (e) => {
-                if (
-                    data?.[`last_digest_${e.event}`] &&
-                    (data?.[`last_digest_${e.event}`] === digest ||
-                        compareDates(data?.[`last_digest_${e.event}`], digest))
-                ) {
-                    return true;
-                }
-                await updateDocument('EVENTS', docId, {
-                    [`last_digest_${e.event}`]: digest,
+                return await updateDocument('EVENTS', docId, {
+                    [`last_digest_${e.event}`]: moment()
+                        .toDate(),
                 });
-                return true;
             });
             return res.status(200).send({ message: 'ok' });
         }
