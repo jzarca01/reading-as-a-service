@@ -10,7 +10,9 @@
     "shell": "firebase functions:shell",
     "deploy": "firebase deploy --debug --only functions",
     "logs": "firebase functions:log",
-    "setup": "yarn firebase use --add"
+    "setup": "yarn firebase use --add",
+    "startup": "./startup.sh",
+    "dev": "npm run startup && firebase emulators:start --import ./test"
   },
   "engines": {
     "node": "14"

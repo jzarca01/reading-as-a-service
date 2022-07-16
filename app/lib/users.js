@@ -1,4 +1,5 @@
 const functions = require("firebase-functions");
+const moment = require('moment');
 
 const {
   getCollection,
@@ -56,7 +57,7 @@ const onUserCreated = functions.firestore
 
       await Promise.all([
         updateDocument("EVENTS", context.params.userId, {
-          account_creation: new Date(),
+          account_creation: moment().toString(),
         }),
         updateDocument("PREFERENCES", context.params.userId, {
           duration: DEFAULT_DURATION,
@@ -146,7 +147,7 @@ const onEventsUpdated = functions.firestore
         await Promise.all([
           sgMail.send(msg),
           updateDocument("EVENTS", context.params.userId, {
-            first_activation: new Date(),
+            first_activation: moment().toString(),
           }),
         ]);
       }

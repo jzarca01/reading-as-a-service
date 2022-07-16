@@ -1,5 +1,6 @@
 const admin = require("firebase-admin");
 const functions = require("firebase-functions");
+const moment = require("moment");
 
 admin.initializeApp();
 
@@ -29,8 +30,7 @@ exports.sendDigest = functions.pubsub
   .timeZone("Europe/Paris")
   .onRun(async (context) => {
     const activeUsers = await getActiveUsers();
-    const now = new Date();
-    const today = now.toISOString().split("T")[0];
+    const today = moment().format(moment.HTML5_FMT.DATE).toString();
     await asyncPool(MAX_CONCURRENT, activeUsers, prepareUserDigest, today);
     // functions.logger.log("Digest generation finished");
     return true;

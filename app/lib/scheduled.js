@@ -1,4 +1,5 @@
 const functions = require("firebase-functions");
+const moment = require('moment');
 
 const { getDocument, updateDocument, deleteDocument } = require("./database");
 const { getUserDigest, sendUserDigest } = require("./articles");
@@ -17,7 +18,7 @@ async function prepareUserDigest(user, allUsers, today) {
       const prefs = await getDocument("PREFERENCES", id);
       // functions.logger.log("prefs", prefs);
 
-      const dailyDigest = await getUserDigest(user, prefs?.duration, today[0]);
+      const dailyDigest = await getUserDigest(user, prefs?.duration, today);
       // functions.logger.log("dailyDigest", dailyDigest);
 
       if (dailyDigest.articles.length) {
@@ -25,22 +26,22 @@ async function prepareUserDigest(user, allUsers, today) {
         // functions.logger.log("user", user);
 
         return Promise.all([
-          await sendUserDigest({
+          sendUserDigest({
             ...dailyDigest,
             name,
             email,
             id,
-            date: today[0],
+            date: today,
             referral_id,
           }),
-          await updateDocument("EVENTS", id, {
-            last_digest_sent: today[0],
+          updateDocument("EVENTS", id, {
+            last_digest_sent: today,
           }),
-          await updateDocument("DIGESTS", id, {
-            [today[0]]: (dailyDigest?.articles || []).map((a) => ({ id: a.item_id, status: 'unread', metadata: {
+          updateDocument("DIGESTS", id, {
+            [today]: (dailyDigest?.articles || []).map((a) => ({ id: a.item_id, status: 'unread', metadata: {
               ...a?.domain_metadata,
               url: a.resolved_url || a.given_url,
-              authors: Object.values(a.authors).map(a => ({name: a?.name, url: a?.url})),
+              authors: (Object.values(a?.authors) || []).map(a => ({name: a?.name, url: a?.url})),
               lang: a.lang,
               word_count: a.word_count,
             } })),

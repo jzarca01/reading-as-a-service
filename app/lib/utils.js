@@ -1,4 +1,4 @@
-const functions = require("firebase-functions");
+const moment = require('moment');
 
 async function asyncForEach(array, callback) {
   for (let index = 0; index < array.length; index++) {
@@ -11,14 +11,7 @@ const DELIMITER = "§";
 function compareDates(dateA, dateB) {
   // functions.logger.log("dateA", dateA);
   // functions.logger.log("dateB", dateB);
-
-  const date1Updated = new Date(dateA.replace(/-/g, "/"));
-  // functions.logger.log("date1Updated", date1Updated);
-
-  const date2Updated = new Date(dateB.replace(/-/g, "/"));
-  // functions.logger.log("date2Updated", date2Updated);
-
-  return date1Updated >= date2Updated;
+  return dateA.isSameOrAfter(dateB);
 }
 
 async function asyncPool(poolLimit, array, iteratorFn, ...theArgs) {

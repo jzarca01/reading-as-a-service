@@ -6,7 +6,7 @@ const { DELIMITER, compareDates } = require("./utils");
 const options = require("../options");
 const { encrypt } = require("./crypto");
 const { sgMail } = require("./mail");
-const { getDocument, updateDocument } = require("./database");
+const { getDocument } = require("./database");
 
 const CONSUMER_KEY = functions.config().default["consumer-key"];
 const DEFAULT_COUNT = 200;
@@ -18,30 +18,36 @@ function getMaxArticles(articles, duration) {
     .filter((t) => t.time_to_read)
     .sort((a, b) => a.time_to_read - b.time_to_read);
 
-  let isDurationModified = false;
-  const curatedArticles = [];
-
-  const getCuratedCurated = (articles, duration) => {
+  const articlesToRead = [];
+  const getCuratedArticles = (articles, duration) => {
     const computedDuration = articles.reduce((acc, item) => {
       if (item.time_to_read + acc < duration) {
-        curatedArticles.push(item);
+        articlesToRead.push(item);
         return acc + item.time_to_read;
       }
       return acc;
     }, 0);
 
     if (articles.length && computedDuration === 0 && duration < 60) {
-      isDurationModified = true;
-      return getCuratedCurated(articles, duration + 5);
+      return getCuratedArticles(articles, duration + 5);
     }
 
     return {
       duration: computedDuration,
-      articles: curatedArticles,
+      articles: articlesToRead,
     };
   };
 
-  return { ...getCuratedCurated(filteredItems, duration), isDurationModified };
+  const curatedArticles = getCuratedArticles(
+    filteredItems,
+    duration
+  );
+
+  return {
+    duration: curatedArticles.computedDuration,
+    articles: curatedArticles.articles,
+    isDurationModified: curatedArticles.computedDuration !== duration,
+  };
 }
 
 async function getPreviousDigests(userId, today) {
@@ -50,7 +56,7 @@ async function getPreviousDigests(userId, today) {
   // functions.logger.log("getPreviousDigests today", today);
 
   if (previousDigests) {
-    const { data } = previousDigests; // data: { [2022-02-02]: [id, ...], [2022-02-01]: [id,....]}
+    const { data } = previousDigests; // data: { [2022-02-02]: [{ id, url }, ...], ... }
 
     if (!data) {
       return [];
@@ -60,24 +66,15 @@ async function getPreviousDigests(userId, today) {
     //functions.logger.log("keys", keys);
 
     if (keys.length) {
-      let sevenDaysAgo = new Date(today.replace(/-/g, "/"));
-      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-      const sevenDaysAgoDatestamp = sevenDaysAgo.toISOString().split("T")[0];
-
       const filteredDigests = keys.filter((k) =>
-        compareDates(k, sevenDaysAgoDatestamp)
+        compareDates(moment(k), moment(today).subtract(7, 'days'))
       );
 
       //functions.logger.log("filteredDigests", filteredDigests);
 
       return filteredDigests
         .map((f) => data[f])
-        .map((v) => {
-          if (typeof v[0] === "string") {
-            return v;
-          }
-          return v.map((v) => v.id);
-        })
+        .map((v) => v.map((v) => v.id))
         .reduce((acc, v) => [...acc, ...v], []);
     }
   }
@@ -117,7 +114,7 @@ async function getUserDigest(
 
     const encryptedArticles = articles.map((s) => ({
       ...s,
-      formattedDate: new Date(s.time_added * 1000),
+      formattedDate: moment().valueOf(),
       salt: encrypt(
         `${data.accessToken}${DELIMITER}${s.item_id}${DELIMITER}${s.resolved_url}${DELIMITER}${today}`
       ),
