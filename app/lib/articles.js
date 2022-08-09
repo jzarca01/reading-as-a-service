@@ -42,9 +42,9 @@ function getMaxArticles(articles, duration) {
     const curatedArticles = getCuratedArticles(filteredItems, duration);
 
     return {
-        duration: curatedArticles.computedDuration,
+        duration: curatedArticles.duration,
         articles: curatedArticles.articles,
-        isDurationModified: curatedArticles.computedDuration !== duration,
+        isDurationModified: curatedArticles.duration !== duration,
     };
 }
 
