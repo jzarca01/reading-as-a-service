@@ -112,7 +112,7 @@ async function getUserDigest(
 
         const encryptedArticles = articles.map((s) => ({
             ...s,
-            formattedDate: moment().unix(),
+            formattedDate: moment(s.time_added * 1000).format('LL'),
             salt: encrypt(
                 `${data.accessToken}${DELIMITER}${s.item_id}${DELIMITER}${s.resolved_url}${DELIMITER}${today}`
             ),

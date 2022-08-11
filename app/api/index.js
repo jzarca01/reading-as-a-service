@@ -133,8 +133,7 @@ router.post('/webhook', async function (req, res) {
 
             await asyncForEach(filteredEvents, async (e) => {
                 return await updateDocument('EVENTS', docId, {
-                    [`last_digest_${e.event}`]: moment()
-                        .toDate(),
+                    [`last_digest_${e.event}`]: moment().toDate(),
                 });
             });
             return res.status(200).send({ message: 'ok' });
