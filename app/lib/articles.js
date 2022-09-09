@@ -9,10 +9,21 @@ const { encrypt } = require('./crypto');
 const { sgMail } = require('./mail');
 const { getDocument } = require('./database');
 
+const { paywallArray } = require('./paywalls');
+
 const CONSUMER_KEY = functions.config().default['consumer-key'];
 const DEFAULT_COUNT = 200;
 
 const DEFAULT_DURATION = 15;
+
+function getLinkWithoutPaywall(url) {
+    let domain = new URL(url);
+    domain = domain.hostname.replace('www.', '');
+    if (paywallArray.includes(domain)) {
+        return `https://12ft.io/${url}`;
+    }
+    return url;
+}
 
 function getMaxArticles(articles, duration) {
     const filteredItems = articles
@@ -110,13 +121,17 @@ async function getUserDigest(
         );
         // functions.logger.log("articles", articles);
 
-        const encryptedArticles = articles.map((s) => ({
-            ...s,
-            formattedDate: moment(s.time_added * 1000).format('LL'),
-            salt: encrypt(
-                `${data.accessToken}${DELIMITER}${s.item_id}${DELIMITER}${s.resolved_url}${DELIMITER}${today}`
-            ),
-        }));
+        const encryptedArticles = articles.map((s) => {
+            const articleLink = getLinkWithoutPaywall(s.resolved_url);
+            return {
+                ...s,
+                isPaywall: articleLink.indexOf('12ft.io') > -1,
+                formattedDate: moment(s.time_added * 1000).format('LL'),
+                salt: encrypt(
+                    `${data.accessToken}${DELIMITER}${s.item_id}${DELIMITER}${articleLink}${DELIMITER}${today}`
+                ),
+            };
+        });
         // functions.logger.log("duration", duration);
         return {
             duration,
@@ -166,6 +181,7 @@ async function sendUserDigest({
 }
 
 module.exports = {
+    getLinkWithoutPaywall,
     getMaxArticles,
     getUserDigest,
     sendUserDigest,
